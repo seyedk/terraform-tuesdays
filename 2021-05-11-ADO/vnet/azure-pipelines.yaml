@@ -41,7 +41,7 @@ stages:
         command: 'validate'
         workingDirectory: '$(System.DefaultWorkingDirectory)/2021-05-11-ADO/vnet'
  # Verify module files with Checkov
-    - bash: checkov --directory $(System.DefaultWorkingDirectory)/2021-06-22-ADO/vnet/.terraform --skip-check CKV_DOCKER_* -o junitxml > $(System.DefaultWorkingDirectory)/Checkov-Module-Report.xml
+    - bash: checkov --directory $(System.DefaultWorkingDirectory)/2021-05-11-ADO/vnet/.terraform --skip-check CKV_DOCKER_* -o junitxml > $(System.DefaultWorkingDirectory)/Checkov-Module-Report.xml
       displayName: 'Verify modules with Checkov'
       name: 'checkov_module_check'
 
