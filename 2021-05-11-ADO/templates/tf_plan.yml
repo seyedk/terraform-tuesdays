@@ -1,0 +1,67 @@
+parameters:
+- name: serviceConnectionName
+  type: string
+- name: tfStateFileKey
+  type: string
+- name: component
+  type: string
+- name: workingDirectory
+  type: string
+- name: region
+  type: string
+
+steps:       
+  - task: charleszipp.azure-pipelines-tasks-terraform.azure-pipelines-tasks-terraform-installer.TerraformInstaller@1
+    displayName: "Install Terraform"
+    inputs:
+      terraformVersion: $(terraformVersion) # Variable from variable group
+
+  - script: |
+      git config --global http.extraheader "AUTHORIZATION: bearer $(System.AccessToken)"
+    displayName: "Git config"
+  
+  - task: AzureCLI@2
+    condition: ne(variables.functionapiaddress, '')
+    inputs:
+      scriptType: ps
+      azureSubscription: skyhi-intg-sc-dev
+      scriptLocation: inlineScript
+      inlineScript: |
+        $swaggeroauth = az account get-access-token --resource $(functionapiaddress) --query accessToken --output tsv
+        echo "##vso[task.setvariable variable=swaggeroauth;isOutput=true]$swaggeroauth"
+    name: azurecliswagger
+
+  - task: TerraformCLI@1
+    displayName: "Terraform Init"
+    inputs:
+      allowTelemetryCollection: false
+      backendType: "azurerm"
+      command: "init"
+      commandOptions: "-input=false"
+      backendServiceArm: ${{parameters.serviceConnectionName}} # service connection must be known at yaml compile time, so it has to be either hardcoded or a parameter - variables won't work
+      backendAzureRmResourceGroupName: "rg-skyhi-${{parameters.component}}-infra-tfstate-$(environment)"
+      backendAzureRmStorageAccountName: "skyhist${{parameters.component}}infra$(environment)tf"
+      backendAzureRmContainerName: tfstate
+      backendAzureRmKey: ${{parameters.tfStateFileKey}} # state file key changes depending on the component, so it's easier to make this a parameter rather than referencing a var group variable
+      workingDirectory: ${{parameters.workingDirectory}}
+
+  - script: "terraform workspace select $(environment) || terraform workspace new $(environment)"
+    displayName: "Select Workspace"
+    workingDirectory: ${{parameters.workingDirectory}}
+
+  - task: TerraformCLI@1
+    displayName: "Terraform Plan"
+    inputs:
+      allowTelemetryCollection: false
+      backendType: "azurerm"
+      command: "plan"
+      commandOptions: "-var-file=${{parameters.region}}.tfvars -input=false -var swaggeroauth=$(azurecliswagger.swaggeroauth) -out=$(Build.BuildNumber)_$(environment)_${{parameters.component}}_${{parameters.region}}.tfplan"
+      environmentServiceName: ${{parameters.serviceConnectionName}}
+      workingDirectory: ${{parameters.workingDirectory}}
+      publishPlanResults: $(environment)_${{parameters.component}}_${{parameters.region}}
+
+  - task: PublishPipelineArtifact@1
+    inputs:
+      targetPath: ${{parameters.workingDirectory}}
+      artifact: "tf_workspace_$(environment)_${{parameters.component}}_${{parameters.region}}"
+      publishLocation: "pipeline"

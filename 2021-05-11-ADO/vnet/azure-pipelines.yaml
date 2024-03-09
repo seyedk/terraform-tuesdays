@@ -12,6 +12,17 @@ trigger:
     - 2021-05-11-ADO/vnet
 
 stages:
+- stage: checkov_scan
+  displayName: "Checkov - Scan Terraform Files"
+  pool:
+    vmImage: ubuntu-latest
+  jobs:
+    - job: run_checkov_in_docker
+      steps:
+      - template: ../templates/checkov_scan.yml
+        parameters:
+          workingDirectory: $(workingDirectory)
+
 - stage: Validate
   displayName: Validate
   jobs:
@@ -19,9 +30,9 @@ stages:
     pool:
       vmImage: ubuntu-latest
     steps:
-    - bash: pip3 install checkov
-      displayName: 'Install checkov'
-      name: 'install_checkov'
+    # - bash: pip3 install checkov
+    #   displayName: 'Install checkov'
+    #   name: 'install_checkov'
 
   # Init
     - task: TerraformCLI@0
@@ -41,9 +52,9 @@ stages:
         command: 'validate'
         workingDirectory: '$(System.DefaultWorkingDirectory)/2021-05-11-ADO/vnet'
  # Verify module files with Checkov
-    - bash: checkov --directory $(System.DefaultWorkingDirectory)/2021-05-11-ADO/vnet/.terraform --soft-fail --skip-check CKV_DOCKER_* -o junitxml > $(System.DefaultWorkingDirectory)/Checkov-Module-Report.xml
-      displayName: 'Verify modules with Checkov'
-      name: 'checkov_module_check'
+    # - bash: checkov --directory $(System.DefaultWorkingDirectory)/2021-05-11-ADO/vnet/.terraform --soft-fail --skip-check CKV_DOCKER_* -o junitxml > $(System.DefaultWorkingDirectory)/Checkov-Module-Report.xml
+    #   displayName: 'Verify modules with Checkov'
+    #   name: 'checkov_module_check'
 
   # Publish test results for modules
   # Shout out to Adin Ermie for this one! https://adinermie.com/publishing-checkov-terraform-quality-checks-to-azure-devops-pipelines/
