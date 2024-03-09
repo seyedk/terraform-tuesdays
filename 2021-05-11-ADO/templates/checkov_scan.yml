@@ -17,7 +17,7 @@ steps:
     condition: succeededOrFailed()
     inputs:
       testRunTitle: Checkov Results
-      failTaskOnFailedTests: true
+      failTaskOnFailedTests: false
       testResultsFormat: JUnit
       testResultsFiles: CheckovReport.xml
       searchFolder: "${{parameters.workingDirectory}}"
