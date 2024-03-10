@@ -61,6 +61,3 @@ The whole purpose behind phase one is to get the basic framework in place for an
 * Build pipeline
 
 The pipeline itself is deploying a simple Azure virtual network with two subnets. Nothing fancy. The stages validate the Terraform code, run a plan, wait for approval, and run an apply. That's it. The trigger is a commit to the 2021-05-11-ADO/vnet directory. That will change eventually.
-
-
-## Next Steps
